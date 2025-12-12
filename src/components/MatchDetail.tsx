@@ -17,6 +17,7 @@ interface MatchInfo {
   league: string
   predictedWinner?: 'home' | 'away' | 'draw'
   confidence?: number
+  dateDisplay?: string // Original date string from JSON
 }
 
 interface TeamRecord {
@@ -87,6 +88,7 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
           league: data.match.league || 'Premier League',
           predictedWinner: data.match.predictedWinner,
           confidence: data.match.confidence,
+          dateDisplay: (data.match as any).dateDisplay, // Store original date string
         })
         
         // Use analysis data if available
@@ -275,12 +277,24 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
                     <div className="flex-1">
                       <div className="text-xs text-gray-500 mb-0.5">Date</div>
                       <div className="text-sm font-semibold text-gray-900">
-                        {new Date(match.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
+                        {(() => {
+                          const dateStr = match.dateDisplay || match.date
+                          // Extract day and month from "Saturday, December 13, 2025" -> "13 December"
+                          const dateMatch = dateStr.match(/(\w+), (\w+) (\d+), (\d+)/)
+                          if (dateMatch) {
+                            const [, , month, day] = dateMatch
+                            return `${day} ${month} ${match.time}`
+                          }
+                          // Fallback: try to parse YYYY-MM-DD format
+                          const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
+                          if (isoMatch) {
+                            const [, year, monthNum, day] = isoMatch
+                            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                            const month = monthNames[parseInt(monthNum) - 1]
+                            return `${day} ${month} ${match.time}`
+                          }
+                          return `${dateStr} ${match.time}`
+                        })()}
                       </div>
                     </div>
                   </div>

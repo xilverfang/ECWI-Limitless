@@ -137,36 +137,43 @@ const PREMIER_LEAGUE_FIXTURES = [
 // Transform Premier League fixtures to match format
 function getPremierLeagueMatches(): any[] {
   return PREMIER_LEAGUE_FIXTURES.map((fixture, index) => {
-    // Parse the date string (format: "Saturday, December 13, 2025")
-    let dateObj: Date
-    try {
-      dateObj = new Date(fixture.date)
-      // If date parsing fails, parse manually
-      if (isNaN(dateObj.getTime())) {
-        const dateMatch = fixture.date.match(/(\w+), (\w+) (\d+), (\d+)/)
-        if (dateMatch) {
-          const [, , month, day, year] = dateMatch
-          const monthMap: Record<string, string> = {
-            'January': '01', 'February': '02', 'March': '03', 'April': '04',
-            'May': '05', 'June': '06', 'July': '07', 'August': '08',
-            'September': '09', 'October': '10', 'November': '11', 'December': '12'
-          }
-          const monthNum = monthMap[month] || '12'
-          dateObj = new Date(`${year}-${monthNum}-${day.padStart(2, '0')}`)
-        } else {
-          dateObj = new Date('2025-12-13') // Default fallback
-        }
-      }
-    } catch {
-      dateObj = new Date('2025-12-13') // Default fallback
+    // Extract date components from the string for time calculation only
+    // Use the original date string for display
+    let defaultTime = '15:00' // Default
+    const dateMatch = fixture.date.match(/(\w+), (\w+) (\d+), (\d+)/)
+    
+    // Set specific times for certain matches
+    if (fixture.home === 'Burnley' && fixture.away === 'Fulham') {
+      defaultTime = '18:30'
+    } else if (fixture.home === 'Arsenal' && fixture.away === 'Wolverhampton Wanderers') {
+      defaultTime = '21:00'
+    } else if ((fixture.home === 'Chelsea' && fixture.away === 'Everton') || 
+               (fixture.home === 'Liverpool' && fixture.away === 'Brighton & Hove Albion')) {
+      defaultTime = '16:00'
+    } else if (fixture.home === 'Brentford' && fixture.away === 'Leeds United') {
+      defaultTime = '17:30'
+    } else if (fixture.home === 'Manchester United' && fixture.away === 'AFC Bournemouth') {
+      defaultTime = '21:00'
+    } else if (dateMatch) {
+      const [dayName] = dateMatch
+      // Set time based on day name
+      if (dayName === 'Sunday') defaultTime = '14:00'
+      else if (dayName === 'Monday') defaultTime = '20:00'
+      else defaultTime = '15:00'
     }
     
-    const dateStr = dateObj.toISOString().split('T')[0]
-    // Default times based on day of week
-    const dayOfWeek = dateObj.getDay()
-    let defaultTime = '15:00' // Saturday default
-    if (dayOfWeek === 0) defaultTime = '14:00' // Sunday
-    if (dayOfWeek === 1) defaultTime = '20:00' // Monday
+    // Parse date for internal use (YYYY-MM-DD format) but keep original for display
+    let dateStr = '2025-12-13' // Default fallback
+    if (dateMatch) {
+      const [, , month, day, year] = dateMatch
+      const monthMap: Record<string, string> = {
+        'January': '01', 'February': '02', 'March': '03', 'April': '04',
+        'May': '05', 'June': '06', 'July': '07', 'August': '08',
+        'September': '09', 'October': '10', 'November': '11', 'December': '12'
+      }
+      const monthNum = monthMap[month] || '12'
+      dateStr = `${year}-${monthNum}-${day.padStart(2, '0')}`
+    }
     
     return {
       id: `pl-${index + 1}`,

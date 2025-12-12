@@ -12,6 +12,7 @@ interface Match {
   predictedWinner?: 'home' | 'away' | 'draw'
   confidence?: number
   keyFactors?: string[]
+  dateDisplay?: string
 }
 
 interface MatchCardProps {
@@ -54,12 +55,24 @@ export default function MatchCard({ match, onClick }: MatchCardProps) {
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <Calendar className="w-4 h-4" />
           <span>
-            {new Date(match.date).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}{' '}
-            at {match.time}
+            {(() => {
+              const dateStr = match.dateDisplay || match.date
+              // Extract day and month from "Saturday, December 13, 2025" -> "13 December"
+              const dateMatch = dateStr.match(/(\w+), (\w+) (\d+), (\d+)/)
+              if (dateMatch) {
+                const [, , month, day] = dateMatch
+                return `${day} ${month} ${match.time}`
+              }
+              // Fallback: try to parse YYYY-MM-DD format
+              const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
+              if (isoMatch) {
+                const [, year, monthNum, day] = isoMatch
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                const month = monthNames[parseInt(monthNum) - 1]
+                return `${day} ${month} ${match.time}`
+              }
+              return `${dateStr} ${match.time}`
+            })()}
           </span>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-600">
