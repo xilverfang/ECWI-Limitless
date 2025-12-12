@@ -166,11 +166,11 @@ const FIXTURES_ANALYSIS = [
     home_form_last_5_PL: "W-W-W-L-D (Excellent recent form and strong defensively)",
     away_form_last_5_PL: "W-D-W-L-W (Generally strong, but dropping points occasionally)",
     head_to_head_note: "Palace famously beat City in the FA Cup Final last season and have been resilient in recent league meetings (two draws in the last five).",
-    key_man_home: "Eberechi Eze (Attacking Midfield, his creativity is the spark for all of Palace's attacks).",
-    key_man_away: "Erling Haaland (Striker, leads the line and is City's most reliable source of goals).",
+    key_man_home: "Jean-Philippe Mateta (Forward, the club's leading scorer (7 PL goals) and focal point of their counter-attacking strategy).",
+    key_man_away: "Erling Haaland (Striker, fully fit and leading the line, though recent goal output has 'slowed down' compared to his usual rate.",
     injuries_affecting_outcome: [
       "Crystal Palace: Jean-Philippe Mateta (Striker) - A potential injury to their main target man limits their ability to hold up the ball and counter-attack.",
-      "Manchester City: Kevin De Bruyne (Midfield) - Even a minor knock to the main playmaker significantly impacts their creative output against a disciplined defense."
+      "Manchester City: Erling Haaland (Striker) - A potential injury to the team's leading goalscorer would significantly impact their goal-scoring efficiency."
     ]
   },
   {
@@ -197,7 +197,7 @@ const FIXTURES_ANALYSIS = [
     away_form_last_5_PL: "W-W-D-W-L (Strong form, challenging near the top of the table)",
     head_to_head_note: "A highly intense Tyne-Wear derby; form often goes out the window, but Newcastle has the superior squad and recent history.",
     key_man_home: "Granit Xhaka (Midfield, vital for leadership, control, and defensive screening).",
-    key_man_away: "Alexander Isak (Striker, consistent goal threat and a focal point for the attack).",
+    key_man_away: "Nick Woltemade (Striker, Isak's replacement and top scorer this season (7 goals); vital target man for their attack).",
     injuries_affecting_outcome: [
       "Sunderland: A key defensive injury would be critical against Newcastle's potent attack.",
       "Newcastle: Bruno Guimarães (Midfield) - An injury to their star defensive midfielder would be a major stability concern."
@@ -242,9 +242,8 @@ const FIXTURES_ANALYSIS = [
     away_form_last_5_PL: "L-W-L-D-W (Better form recently, showing an ability to score)",
     head_to_head_note: "Manchester United usually wins this fixture, but Bournemouth secured a notable win last season.",
     key_man_home: "Bruno Fernandes (Attacking Midfield, the creative engine and penalty taker; vital for goals and assists).",
-    key_man_away: "Matheus Cunha (Striker, leading the line and a powerful runner; an outlet for the team).",
+    key_man_away: "Antoine Semenyo (Striker, leading the line and a powerful runner; an outlet for the team).",
     injuries_affecting_outcome: [
-      "Manchester United: Marcus Rashford (Forward) - Even a small injury to a star forward puts more pressure on Šeško and Fernandes to score.",
       "AFC Bournemouth: Tyler Adams (Midfield) - Their defensive stability relies heavily on his presence in the engine room."
     ]
   }

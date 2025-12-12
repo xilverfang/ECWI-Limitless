@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from './Header'
 import ConfidenceComparison from './ConfidenceComparison'
-import TopPredictors from './TopPredictors'
 import { Trophy, ArrowRight } from 'lucide-react'
 
 const LEAGUES = [
@@ -113,11 +112,6 @@ export default function EWCIDashboard() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Top Predictors Section */}
-        <div className="mt-12">
-          <TopPredictors />
         </div>
       </div>
     </div>

@@ -12,12 +12,9 @@ export default function Header() {
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Expert-Weighted Confidence Index
+              <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                Sports betting confidence index. Follow the experts, beat the crowd.
               </h1>
-              <p className="text-sm text-gray-600">
-                Follow the Smart Money in Sports Prediction Markets
-              </p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
