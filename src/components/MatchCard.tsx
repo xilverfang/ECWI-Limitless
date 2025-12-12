@@ -42,10 +42,10 @@ export default function MatchCard({ match, onClick }: MatchCardProps) {
     >
       {/* Teams */}
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold text-gray-900">{match.homeTeam}</h3>
-          <span className="text-gray-400 text-sm">vs</span>
-          <h3 className="text-lg font-bold text-gray-900">{match.awayTeam}</h3>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <h3 className="text-lg font-bold text-gray-900 flex-1 text-right truncate pr-2">{match.homeTeam}</h3>
+          <span className="text-gray-400 text-sm flex-shrink-0">vs</span>
+          <h3 className="text-lg font-bold text-gray-900 flex-1 text-left truncate pl-2">{match.awayTeam}</h3>
         </div>
       </div>
 

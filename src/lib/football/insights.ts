@@ -1,4 +1,4 @@
-import { FootballFixture, HeadToHead, TeamStatistics } from './api'
+import { FootballFixture } from './api'
 
 export interface MatchInsight {
   type: 'home-record' | 'away-record' | 'form' | 'injury' | 'suspension' | 'head-to-head' | 'standings'
@@ -13,9 +13,9 @@ export interface MatchInsight {
  */
 export async function generateMatchInsights(
   fixture: FootballFixture,
-  homeForm?: any[],
-  awayForm?: any[],
-  h2h?: HeadToHead[],
+  homeForm?: FootballFixture[],
+  awayForm?: FootballFixture[],
+  h2h?: FootballFixture[],
   injuries?: any[]
 ): Promise<MatchInsight[]> {
   const insights: MatchInsight[] = []
@@ -24,9 +24,15 @@ export async function generateMatchInsights(
 
   // Head-to-head insights
   if (h2h && h2h.length > 0) {
-    const homeWins = h2h.filter(m => m.goals.home > m.goals.away).length
-    const awayWins = h2h.filter(m => m.goals.away > m.goals.home).length
-    const draws = h2h.length - homeWins - awayWins
+    const homeWins = h2h.filter(m => 
+      m.goals.home !== null && m.goals.away !== null && m.goals.home > m.goals.away
+    ).length
+    const awayWins = h2h.filter(m => 
+      m.goals.home !== null && m.goals.away !== null && m.goals.away > m.goals.home
+    ).length
+    const draws = h2h.filter(m => 
+      m.goals.home !== null && m.goals.away !== null && m.goals.home === m.goals.away
+    ).length
 
     if (homeWins > awayWins) {
       insights.push({
@@ -55,59 +61,64 @@ export async function generateMatchInsights(
     }
   }
 
-  // Home form insights
+  // Home form insights (analyze last matches where team was home)
   if (homeForm && homeForm.length > 0) {
-    const homeWins = homeForm.filter(m => {
-      const isHome = m.teams.home.id === homeTeamId
-      return isHome ? m.goals.home > m.goals.away : m.goals.away > m.goals.home
-    }).length
+    const homeMatches = homeForm.filter(m => m.teams.home.id === homeTeamId)
+    if (homeMatches.length > 0) {
+      const homeWins = homeMatches.filter(m => 
+        m.goals.home !== null && m.goals.away !== null && m.goals.home > m.goals.away
+      ).length
+      const draws = homeMatches.filter(m => 
+        m.goals.home !== null && m.goals.away !== null && m.goals.home === m.goals.away
+      ).length
+      const winRate = (homeWins / homeMatches.length) * 100
 
-    const winRate = (homeWins / homeForm.length) * 100
-
-    if (winRate >= 60) {
-      insights.push({
-        type: 'home-record',
-        title: 'Strong Home Form',
-        description: `${fixture.teams.home.name} has won ${homeWins} of their last ${homeForm.length} home matches`,
-        impact: 'positive',
-        team: 'home',
-      })
-    } else if (winRate <= 30) {
-      insights.push({
-        type: 'home-record',
-        title: 'Poor Home Form',
-        description: `${fixture.teams.home.name} has struggled at home recently`,
-        impact: 'negative',
-        team: 'home',
-      })
+      if (winRate >= 60) {
+        insights.push({
+          type: 'home-record',
+          title: 'Strong Home Form',
+          description: `${fixture.teams.home.name} has won ${homeWins} of their last ${homeMatches.length} home matches`,
+          impact: 'positive',
+          team: 'home',
+        })
+      } else if (winRate <= 30 && homeWins === 0) {
+        insights.push({
+          type: 'home-record',
+          title: 'Poor Home Form',
+          description: `${fixture.teams.home.name} has struggled at home recently (${homeWins} wins in last ${homeMatches.length} matches)`,
+          impact: 'negative',
+          team: 'home',
+        })
+      }
     }
   }
 
-  // Away form insights
+  // Away form insights (analyze last matches where team was away)
   if (awayForm && awayForm.length > 0) {
-    const awayWins = awayForm.filter(m => {
-      const isAway = m.teams.away.id === awayTeamId
-      return isAway ? m.goals.away > m.goals.home : m.goals.home > m.goals.away
-    }).length
+    const awayMatches = awayForm.filter(m => m.teams.away.id === awayTeamId)
+    if (awayMatches.length > 0) {
+      const awayWins = awayMatches.filter(m => 
+        m.goals.home !== null && m.goals.away !== null && m.goals.away > m.goals.home
+      ).length
+      const winRate = (awayWins / awayMatches.length) * 100
 
-    const winRate = (awayWins / awayForm.length) * 100
-
-    if (winRate >= 60) {
-      insights.push({
-        type: 'away-record',
-        title: 'Excellent Away Form',
-        description: `${fixture.teams.away.name} has won ${awayWins} of their last ${awayForm.length} away matches`,
-        impact: 'positive',
-        team: 'away',
-      })
-    } else if (winRate <= 30) {
-      insights.push({
-        type: 'away-record',
-        title: 'Poor Away Form',
-        description: `${fixture.teams.away.name} has struggled away from home recently`,
-        impact: 'negative',
-        team: 'away',
-      })
+      if (winRate >= 60) {
+        insights.push({
+          type: 'away-record',
+          title: 'Excellent Away Form',
+          description: `${fixture.teams.away.name} has won ${awayWins} of their last ${awayMatches.length} away matches`,
+          impact: 'positive',
+          team: 'away',
+        })
+      } else if (winRate <= 30 && awayWins === 0) {
+        insights.push({
+          type: 'away-record',
+          title: 'Poor Away Form',
+          description: `${fixture.teams.away.name} has struggled away from home recently (${awayWins} wins in last ${awayMatches.length} matches)`,
+          impact: 'negative',
+          team: 'away',
+        })
+      }
     }
   }
 

@@ -58,7 +58,6 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
   const [teamRecords, setTeamRecords] = useState<TeamRecord[]>([])
   const [predictionReasons, setPredictionReasons] = useState<PredictionReason[]>([])
   const [comments, setComments] = useState<Comment[]>([])
-  const [loadingComments, setLoadingComments] = useState(false)
 
   useEffect(() => {
     fetchMatchData()
@@ -67,91 +66,137 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
   const fetchMatchData = async () => {
     setLoading(true)
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/matches/${matchId}`)
-      // const data = await response.json()
+      // Fetch match data from API
+      const response = await fetch(`/api/matches/${matchId}`)
+      const data = await response.json()
 
-      // Sample data - replace with API data
-      setMatch({
-        id: matchId,
-        homeTeam: 'Manchester United',
-        awayTeam: 'Liverpool',
-        date: '2024-01-20',
-        time: '15:00',
-        venue: 'Old Trafford',
-        stadium: 'Old Trafford',
-        stadiumCapacity: 74879,
-        referee: 'Michael Oliver',
-        league: 'Premier League',
-        predictedWinner: 'away',
-        confidence: 68,
-      })
+      if (data.success && data.match) {
+        console.log('Match data received:', data.match) // Debug log
+        
+        // Transform API data to component format
+        setMatch({
+          id: data.match.id,
+          homeTeam: data.match.homeTeam,
+          awayTeam: data.match.awayTeam,
+          date: data.match.date,
+          time: data.match.time,
+          venue: data.match.venue,
+          stadium: data.match.venue,
+          stadiumCapacity: data.match.capacity || 0,
+          referee: data.match.referee || 'To be confirmed',
+          league: data.match.league || 'Premier League',
+          predictedWinner: data.match.predictedWinner,
+          confidence: data.match.confidence,
+        })
+        
+        // Use analysis data if available
+        const analysis = data.match.analysis || data.analysis
+        
+        // Transform insights to PredictionReason format
+        if (data.insights && data.insights.length > 0) {
+          const reasons = data.insights.map((insight: any, index: number) => ({
+            id: `insight-${index + 1}`,
+            title: insight.title,
+            description: insight.description,
+            impact: insight.impact === 'positive' ? 'high' : insight.impact === 'negative' ? 'high' : 'medium' as 'high' | 'medium' | 'low',
+            favors: insight.team === 'home' ? 'home' : insight.team === 'away' ? 'away' : 'neutral' as 'home' | 'away' | 'neutral',
+          }))
+          setPredictionReasons(reasons)
+        } else {
+          // If no insights, set empty array
+          setPredictionReasons([])
+        }
+        
+        // Generate team records from analysis data
+        if (analysis) {
+          // Parse form strings to arrays (e.g., "W-W-L-W-W (text)" -> ['W', 'W', 'L', 'W', 'W'])
+          const parseForm = (formStr: string) => {
+            if (!formStr) return []
+            // Remove text in brackets first, then extract form
+            const cleaned = formStr.replace(/\s*\([^)]+\)\s*$/, '').trim()
+            const formMatch = cleaned.match(/^([WDL]-){4}[WDL]/)
+            if (formMatch) {
+              return cleaned.split('-').slice(0, 5)
+            }
+            return []
+          }
+          
+          // Extract injuries for each team
+          const getInjuriesForTeam = (teamName: string, injuries: string[]) => {
+            return injuries
+              .filter(injury => injury.startsWith(teamName))
+              .map(injury => injury.replace(`${teamName}: `, ''))
+          }
+          
+          // Extract key player name
+          const getKeyPlayerName = (keyManStr: string) => {
+            if (!keyManStr) return ''
+            const match = keyManStr.match(/^([^(]+)/)
+            return match ? match[0].trim() : ''
+          }
+          
+          setTeamRecords([
+            {
+              team: 'home',
+              teamName: data.match.homeTeam,
+              recentForm: parseForm(analysis.home_form_last_5_PL || ''),
+              homeAwayRecord: analysis.head_to_head_note_home || analysis.head_to_head_note || `Playing at ${data.match.venue}`,
+              goalsScored: 0, // Not in analysis data
+              goalsConceded: 0, // Not in analysis data
+              keyPlayers: analysis.key_man_home ? [getKeyPlayerName(analysis.key_man_home)] : [],
+              injuries: getInjuriesForTeam(data.match.homeTeam, analysis.injuries_affecting_outcome || []),
+              suspensions: [],
+            },
+            {
+              team: 'away',
+              teamName: data.match.awayTeam,
+              recentForm: parseForm(analysis.away_form_last_5_PL || ''),
+              homeAwayRecord: analysis.head_to_head_note_away || analysis.head_to_head_note || `Away match`,
+              goalsScored: 0, // Not in analysis data
+              goalsConceded: 0, // Not in analysis data
+              keyPlayers: analysis.key_man_away ? [getKeyPlayerName(analysis.key_man_away)] : [],
+              injuries: getInjuriesForTeam(data.match.awayTeam, analysis.injuries_affecting_outcome || []),
+              suspensions: [],
+            },
+          ])
+        } else {
+          // Fallback if no analysis data
+          setTeamRecords([
+            {
+              team: 'home',
+              teamName: data.match.homeTeam,
+              recentForm: [],
+              homeAwayRecord: `Playing at ${data.match.venue}${data.match.capacity ? ` (Capacity: ${data.match.capacity.toLocaleString()})` : ''}`,
+              goalsScored: 0,
+              goalsConceded: 0,
+              keyPlayers: [],
+              injuries: [],
+              suspensions: [],
+            },
+            {
+              team: 'away',
+              teamName: data.match.awayTeam,
+              recentForm: [],
+              homeAwayRecord: `Away match`,
+              goalsScored: 0,
+              goalsConceded: 0,
+              keyPlayers: [],
+              injuries: [],
+              suspensions: [],
+            },
+          ])
+        }
+        
+        // Use generated comments from API
+        if (data.comments && data.comments.length > 0) {
+          setComments(data.comments)
+        }
+      } else {
+        // No match data found - will show error state
+        console.error('Match not found:', matchId)
+      }
 
-      setTeamRecords([
-        {
-          team: 'home',
-          teamName: 'Manchester United',
-          recentForm: ['W', 'L', 'W', 'D', 'W'],
-          homeAwayRecord: '8W-2D-2L (Home)',
-          goalsScored: 24,
-          goalsConceded: 15,
-          keyPlayers: ['Bruno Fernandes', 'Marcus Rashford', 'Casemiro'],
-          injuries: ['Bruno Fernandes (knee)'],
-          suspensions: ['Casemiro'],
-        },
-        {
-          team: 'away',
-          teamName: 'Liverpool',
-          recentForm: ['W', 'W', 'W', 'L', 'W'],
-          homeAwayRecord: '6W-1D-1L (Away)',
-          goalsScored: 32,
-          goalsConceded: 12,
-          keyPlayers: ['Mohamed Salah', 'Virgil van Dijk', 'Darwin Núñez'],
-          injuries: [],
-          suspensions: [],
-        },
-      ])
-
-      setPredictionReasons([
-        {
-          id: '1',
-          title: 'Superior Away Form',
-          description: 'Liverpool has won 6 of their last 7 away matches, demonstrating strong performance on the road.',
-          impact: 'high',
-          favors: 'away',
-        },
-        {
-          id: '2',
-          title: 'Key Player Absences',
-          description: 'Manchester United missing Bruno Fernandes (injury) and Casemiro (suspension) significantly weakens their midfield.',
-          impact: 'high',
-          favors: 'away',
-        },
-        {
-          id: '3',
-          title: 'Head-to-Head Record',
-          description: 'Liverpool has won 3 of the last 5 meetings between these teams.',
-          impact: 'medium',
-          favors: 'away',
-        },
-        {
-          id: '4',
-          title: 'Home Advantage',
-          description: 'Manchester United has a strong home record with 8 wins in 12 home matches this season.',
-          impact: 'medium',
-          favors: 'home',
-        },
-        {
-          id: '5',
-          title: 'Attacking Prowess',
-          description: 'Liverpool has scored 32 goals this season compared to Man United\'s 24, showing better offensive output.',
-          impact: 'medium',
-          favors: 'away',
-        },
-      ])
-
-      // Simulate fetching comments from Polymarket API
-      await fetchComments()
+      // Comments are already loaded from API response
     } catch (error) {
       console.error('Error fetching match data:', error)
     } finally {
@@ -159,66 +204,6 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
     }
   }
 
-  const fetchComments = async () => {
-    setLoadingComments(true)
-    try {
-      // TODO: Replace with actual Polymarket API call
-      // const response = await fetch('/api/polymarket/comments', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ matchId }),
-      // })
-      // const data = await response.json()
-
-      // Sample comments
-      setComments([
-        {
-          id: '1',
-          author: '@FootballPundit',
-          text: 'Liverpool looking unstoppable right now. Even at Old Trafford, I fancy them to get the win.',
-          timestamp: '2024-01-18T10:30:00Z',
-          likes: 142,
-          sentiment: 'positive',
-        },
-        {
-          id: '2',
-          author: '@RedDevil99',
-          text: 'Without Bruno and Casemiro, this is going to be tough. But never count United out at home!',
-          timestamp: '2024-01-18T12:15:00Z',
-          likes: 89,
-          sentiment: 'neutral',
-        },
-        {
-          id: '3',
-          author: '@LFCAnalysis',
-          text: 'Salah is in incredible form. If he continues like this, United\'s defense will struggle.',
-          timestamp: '2024-01-18T14:45:00Z',
-          likes: 203,
-          sentiment: 'positive',
-        },
-        {
-          id: '4',
-          author: '@TacticsBoard',
-          text: 'This match will be decided in midfield. With Casemiro out, Liverpool will dominate possession.',
-          timestamp: '2024-01-19T09:20:00Z',
-          likes: 156,
-          sentiment: 'neutral',
-        },
-        {
-          id: '5',
-          author: '@PremierLeagueFan',
-          text: 'Old Trafford atmosphere will be electric! United always show up for these big matches.',
-          timestamp: '2024-01-19T11:30:00Z',
-          likes: 98,
-          sentiment: 'positive',
-        },
-      ])
-    } catch (error) {
-      console.error('Error fetching comments:', error)
-    } finally {
-      setLoadingComments(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -266,20 +251,20 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
               </div>
 
               <div className="p-6">
-                {/* Teams */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex-1 text-center">
-                    <div className="text-2xl font-bold text-gray-900 mb-1">{match.homeTeam}</div>
-                    <div className="text-sm text-gray-500 font-medium">Home</div>
-                  </div>
-
-                  <div className="px-6">
-                    <span className="text-gray-400 font-bold text-xl">VS</span>
-                  </div>
-
-                  <div className="flex-1 text-center">
-                    <div className="text-2xl font-bold text-gray-900 mb-1">{match.awayTeam}</div>
-                    <div className="text-sm text-gray-500 font-medium">Away</div>
+                {/* Teams - Centered */}
+                <div className="flex items-center justify-center mb-6">
+                  <div className="text-center">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">{match.homeTeam}</div>
+                        <div className="text-sm text-gray-500 font-medium">Home</div>
+                      </div>
+                      <span className="text-gray-400 font-bold text-xl">VS</span>
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">{match.awayTeam}</div>
+                        <div className="text-sm text-gray-500 font-medium">Away</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -352,14 +337,14 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
             </div>
 
             {/* Section 2: Team Analysis */}
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Team Analysis</h2>
+            <div className="bg-white rounded-2xl border-2 border-gray-200 p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">Team Analysis</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {teamRecords.map((record) => (
-                  <div key={record.team} className="space-y-4">
+                  <div key={record.team} className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-gray-900">{record.teamName}</h3>
+                      <h3 className="text-1xl font-bold text-gray-900">{record.teamName}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${record.team === 'home' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
                         }`}>
                         {record.team === 'home' ? 'Home' : 'Away'}
@@ -367,9 +352,9 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
                     </div>
 
                     {/* Recent Form */}
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Recent Form</div>
-                      <div className="flex space-x-1">
+                    <div className="mb-6">
+                      <div className="text-xs font-semibold text-gray-600 mb-3">Recent Form</div>
+                      <div className="flex space-x-1 mb-4">
                         {record.recentForm.map((result, idx) => (
                           <div
                             key={idx}
@@ -382,57 +367,72 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
                           </div>
                         ))}
                       </div>
+                      {/* Form Remark - extracted from homeAwayRecord */}
+                      {(() => {
+                        const remarkMatch = record.homeAwayRecord.match(/\(([^)]+)\)/)
+                        return remarkMatch ? (
+                          <div className="text-xs text-gray-600 italic mt-2 block">
+                            {remarkMatch[1]}
+                          </div>
+                        ) : null
+                      })()}
                     </div>
 
                     {/* Record */}
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-1">Record</div>
-                      <div className="text-sm font-medium text-gray-900">{record.homeAwayRecord}</div>
-                    </div>
+                    {record.homeAwayRecord && record.homeAwayRecord !== 'Playing at ' && record.homeAwayRecord !== 'Away match' && (
+                      <div className="mb-6">
+                        <div className="text-xs font-semibold text-gray-600 mb-3">Head-to-Head Record</div>
+                        <div className="text-sm font-medium text-gray-900 leading-relaxed break-words">
+                          {record.homeAwayRecord.replace(/\s*\([LWDL0-9,\s]+\)\s*/g, '').trim()}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Goals */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-green-50 rounded-lg p-3">
-                        <div className="text-xs font-semibold text-gray-600 mb-1">Goals Scored</div>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      <div className="bg-green-50 rounded-lg p-4">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">Goals Scored</div>
                         <div className="text-2xl font-bold text-green-600">{record.goalsScored}</div>
                       </div>
-                      <div className="bg-red-50 rounded-lg p-3">
-                        <div className="text-xs font-semibold text-gray-600 mb-1">Goals Conceded</div>
+                      <div className="bg-red-50 rounded-lg p-4">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">Goals Conceded</div>
                         <div className="text-2xl font-bold text-red-600">{record.goalsConceded}</div>
                       </div>
                     </div>
 
                     {/* Key Players */}
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-2">Key Players</div>
-                      <div className="flex flex-wrap gap-2">
-                        {record.keyPlayers.map((player, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                            {player}
-                          </span>
-                        ))}
+                    {record.keyPlayers.length > 0 && (
+                      <div className="mb-6">
+                        <div className="text-xs font-semibold text-gray-600 mb-3">Key Players</div>
+                        <div className="flex flex-wrap gap-2">
+                          {record.keyPlayers.map((player, idx) => (
+                            <span key={idx} className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                              {player}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Injuries & Suspensions */}
                     {(record.injuries.length > 0 || record.suspensions.length > 0) && (
-                      <div className="pt-3 border-t border-gray-200 space-y-2">
+                      <div className="pt-6 mt-6 border-t border-gray-200 space-y-4">
                         {record.injuries.length > 0 && (
                           <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <AlertTriangle className="w-4 h-4 text-orange-500" />
+                            <div className="flex items-center space-x-2 mb-3">
+                              <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
                               <div className="text-xs font-semibold text-gray-600">Injuries</div>
                             </div>
-                            <div className="text-sm text-orange-700">{record.injuries.join(', ')}</div>
+                            <div className="text-sm text-orange-700 leading-relaxed ml-6">{record.injuries.join(', ')}</div>
                           </div>
                         )}
                         {record.suspensions.length > 0 && (
                           <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            <div className="flex items-center space-x-2 mb-3">
+                              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
                               <div className="text-xs font-semibold text-gray-600">Suspensions</div>
                             </div>
-                            <div className="text-sm text-red-700">{record.suspensions.join(', ')}</div>
+                            <div className="text-sm text-red-700 leading-relaxed ml-6">{record.suspensions.join(', ')}</div>
                           </div>
                         )}
                       </div>
@@ -497,12 +497,12 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
                   <MessageSquare className="w-5 h-5 text-[#1ebc8d]" />
                   <span>Community Insights</span>
                 </h2>
-                {loadingComments && (
+                {comments.length === 0 && (
                   <Loader2 className="w-5 h-5 text-[#1ebc8d] animate-spin" />
                 )}
               </div>
 
-              {loadingComments ? (
+              {comments.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-sm text-gray-600">Loading comments...</p>
                 </div>
